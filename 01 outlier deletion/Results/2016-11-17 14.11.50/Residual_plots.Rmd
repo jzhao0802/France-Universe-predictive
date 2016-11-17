@@ -1,0 +1,32 @@
+---
+title: "residual plot"
+author: "Jie Zhao"
+date: "November 17, 2016"
+output: html_document
+---
+
+Here let's get the residual plot for Try4 experiment, which is 
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE}
+library(ggplot2)
+market_name <- "panel_catt_daily"
+df4residualPlot <- readRDS(paste0('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2016-11-17 14.11.50\\df4residualPlot.RDS'))
+
+```
+
+
+```{r, echo=FALSE, include=TRUE}
+# plot 1 
+# -	X = Observed vs Y = Residual 
+plot_title_1 <- paste0("Residual V.S. Observed Y (", market_name,"), with Survey variables")
+ggplot(df4residualPlot , aes(x= Observe, y= Residual)) +  geom_point() + ggtitle(plot_title_1)
+
+
+# plot 2
+# -	X = Observed vs Y = RStudent
+plot_title_2 <- paste0("Studentized Residuals V.S. Observed Y (", market_name,"), with Survey variables")
+ggplot(df4residualPlot , aes(x= Observe, y= Studentized_residuals)) +  geom_point() + ggtitle(plot_title_2)
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

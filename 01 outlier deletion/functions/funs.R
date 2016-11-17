@@ -44,7 +44,8 @@ transf2dummy <- function(top10Vars, data_after_filtered, n_parts){
       temp <- lapply(top10Vars, function(v)transf4dummy(data_top10Vars,v,n_parts))
       data_top10Varts4dummy <- as.data.frame(t(ldply(temp, quickdf)))
       colnames(data_top10Varts4dummy) <- top10Vars
-      lapply(data_top10Varts4dummy, table)
+      top10dummy_tb4Check <- lapply(data_top10Varts4dummy, table)
+      saveRDS(top10dummy_tb4Check, paste0(resultDir, 'top10dummy_tb4Check.RDS'))
       
       data_top10Vars2dummy <- model.matrix(~., data_top10Varts4dummy)[, -1]
       return(data_top10Vars2dummy)
@@ -70,13 +71,34 @@ transf2dummy_y <- function(data, v, n){
       
 }
 
+transf2squareEachVar <- function(vct){
+#       vct <- data[, v]
+      vct_square <- vct^2
+      return(vct_square)
+}
+transf2square <- function(data, vars){
+      data_top10 <- data[, vars]
+      temp <- lapply(data_top10, function(vct)transf2squareEachVar(vct))
+      data_top10Varts2square <- as.data.frame(t(ldply(temp, quickdf)[, -1]))
+      colnames(data_top10Varts2square) <- paste0('square_', vars)
+      return(data_top10Varts2square)
+}
 
-
+getCoefTb <- function(step_wise){
+      coef<- data.frame(Coefficient=round(coef(step_wise), 7) , Odds_ratio=round(exp(coef(step_wise)), 7))
+      #        coef<- data.frame(coefficient=round(coef(fit), 2) , odds_ratio=sprintf('%.2f', exp(coef(fit))))
+      
+      p_value<- round(summary(step_wise)$coef[, "Pr(>|t|)"], 7)
+      stepwise_output <- cbind(coef, P_value=p_value)
+      return(stepwise_output)
+      
+}
 
 varsDelAndStepwiseTest <- function(market_name2, n_parts
                                    , bTop10dummy
                                    , bYdummy
-                                   , bNonLinear){
+                                   , bNonLinear
+                                   , bRemoveTop10init){
       data_after_filtered<- filter_out_records(pre_data_for_outliers2, modelData, market_name2,global_lower_p, global_higher_p)
       data_after_filtered<- data_after_filtered[,c(market_name2, vars)]
       market_sales <- data_after_filtered[,market_name2]
@@ -87,8 +109,16 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
             dummy4top10 <- transf2dummy(top10Vars, data_after_filtered, n_parts=n_parts)
             data_after_filtered = data_after_filtered %>%
                   bind_cols(as.data.frame(dummy4top10))
+           
       }
       
+      
+      if(bNonLinear == TRUE){
+            # add x^2 variables of the top 10 variables
+            squareTop10 <- transf2square(data_after_filtered, top10Vars)
+            data_after_filtered = data_after_filtered %>%
+                  bind_cols(as.data.frame(squareTop10))
+      }
       
       # dim(data_after_filtered)
       non_zero_vars <- nearZeroVar(data_after_filtered, saveMetrics= TRUE)
@@ -124,10 +154,16 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
       
       #draw graphics for t
       
-      data_after_filtered<- data.frame(y = market_sales,data_after_filtered)
-      
+      # data_after_filtered<- data.frame(y = market_sales,data_after_filtered)
       data_after_filtered <- data_after_filtered %>%
-            select(-one_of(top10Vars))
+            mutate(y=market_sales)
+      
+      # if removing the original top 10 variables
+      if(bRemoveTop10init == TRUE){
+            data_after_filtered <- data_after_filtered %>%
+                  select(-one_of(top10Vars))
+      }
+      
       
       if(bYdummy == TRUE){
             
@@ -146,8 +182,18 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
                       direction = "both",
                       trace = 0)
       
-      y_pred <- predict(lm_step, data_after_filtered)  
+      # get the student residual
+      studentized_residuals <- rstudent(lm_step)
       
+      # get the coefficient table
+      stepwise_coefs <- getCoefTb(lm_step)
+      
+      y_pred <- predict(lm_step, data_after_filtered)  
+      y <- data_after_filtered$y
+      df4residualPlot <- data.frame(Observe=y
+                                    , Pred=y_pred
+                                    , Residual=y-y_pred
+                                    , Studentized_residuals=studentized_residuals)
       
       R.Square <- cal_rsquare(data_after_filtered$y, y_pred)
       
@@ -170,6 +216,60 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
       colnames(check_corr) <- market_name2
       check_corr2 <- check_corr[order(abs(check_corr[,market_name2]), decreasing = TRUE), , drop = FALSE]
       colnames(check_corr2) <- market_name2
-      write.csv(check_corr2, paste0(resultDir, market_name2, "_corr.csv"),row.names=TRUE)
-      return(R.Square)
+      # write.csv(check_corr2, paste0(resultDir, market_name2, "_corr.csv"),row.names=TRUE)
+      
+      temp <- c(market_name="panel_catt_daily"
+                , n_parts = n_parts
+                , bTop10dummy = bTop10dummy
+                , bYdummy = bYdummy
+                , bNonLinear = bNonLinear
+                , bRemoveTop10init = bRemoveTop10init
+                , R.Square = R.Square)
+      output <- list(rsquare=temp, rsquareTbNm=names(temp), coefs=stepwise_coefs, check_corr2=check_corr2
+                     , df4residualPlot=df4residualPlot)
+      return(output)
+}
+
+summarize_result <- function(try_list){
+      temp <- lapply(try_list, function(i){
+            bTop10dummy = para_df[i, "bTop10dummy"]
+            bYdummy = para_df[i, "bYdummy"]
+            bNonLinear = para_df[i, "bNonLinear"]
+            bRemoveTop10init = para_df[i, "bRemoveTop10init"]
+            
+            temp_lst <- varsDelAndStepwiseTest(market_name2="panel_catt_daily"
+                                               , n_parts = n_parts
+                                               , bTop10dummy = bTop10dummy
+                                               , bYdummy = bYdummy
+                                               , bNonLinear = bNonLinear
+                                               , bRemoveTop10init = bRemoveTop10init
+            )
+            
+            return(temp_lst)
+      })   
+      return(temp)
+}
+
+saveTb <- function(lst){
+      lapply(1:length(lst), function(i){
+            X <- lst[[i]]
+            flag <- as.data.frame(rbind(X$rsquare))
+            coefs <- X$coefs
+            corr <- X$check_corr2
+            write.xlsx(coefs
+                       , file=paste0(resultDir, 'stepwise_coefs.xlsx')
+                       , sheetName=paste0('try ', i)
+                       , row.names=T
+                       , append=T
+                       , showNA=T
+            )
+            write.xlsx(corr
+                       , file=paste0(resultDir, 'correlation.xlsx')
+                       , sheetName=paste0('try ', i)
+                       , row.names=T
+                       , append=T
+                       , showNA=T
+            )
+            
+      })
 }
