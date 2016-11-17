@@ -1,0 +1,6 @@
+RSquare for  panel_catt_daily  =  0.6593085 
+RSquare for  panel_catt_daily  =  0.6593085 
+RSquare for  panel_catt_daily  =  0.6593085 
+RSquare for  panel_catt_daily  =  0.8262581 
+RSquare for  panel_catt_daily  =  0.8554712 
+RSquare for  panel_catt_daily  =  0.6368004 
