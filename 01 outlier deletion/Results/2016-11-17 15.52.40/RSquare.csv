@@ -1,0 +1,3 @@
+"market_name","n_parts","bTop10dummy","bYdummy","bNonLinear","bRemoveTop10init","R.Square"
+"panel_catt_daily","60","TRUE","TRUE","FALSE","TRUE","0.855471188967309"
+"panel_catt_daily","60","FALSE","TRUE","TRUE","FALSE","0.869122766412471"

@@ -256,6 +256,8 @@ saveTb <- function(lst){
             flag <- as.data.frame(rbind(X$rsquare))
             coefs <- X$coefs
             corr <- X$check_corr2
+            residualsTb <- X$df4residualPlot
+            saveRDS(residualsTb, paste0(resultDir, 'residualTb_try', i, '.RDS'))
             write.xlsx(coefs
                        , file=paste0(resultDir, 'stepwise_coefs.xlsx')
                        , sheetName=paste0('try ', i)

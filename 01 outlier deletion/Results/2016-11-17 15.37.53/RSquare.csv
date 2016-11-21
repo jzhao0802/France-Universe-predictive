@@ -1,0 +1,5 @@
+Try ID,market_name,n_parts,bTop10dummy,bYdummy,bNonLinear,bRemoveTop10init,R.Square
+1,panel_catt_daily,60,TRUE,FALSE,FALSE,TRUE,0.636800362
+2,panel_catt_daily,60,FALSE,FALSE,TRUE,FALSE,0.680228133
+3,panel_catt_daily,60,TRUE,TRUE,FALSE,TRUE,0.855471189
+4,panel_catt_daily,60,FALSE,TRUE,TRUE,FALSE,0.869122766

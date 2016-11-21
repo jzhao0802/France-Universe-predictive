@@ -203,14 +203,14 @@ top10Vars <- read.xlsx(paste0(dataPath, 'pearson_correlation between observed y 
 
 para_df <- as.data.frame(rbind(
       c(bTop10dummy=T, bYdummy=F, bNonLinear=F, bRemoveTop10init=T)
-      , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, bRemoveTop10init=T)
-      , c(bTop10dummy=T, bYdummy=T, bNonLinear=F, bRemoveTop10init=T)
       , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, bRemoveTop10init=F)
+      , c(bTop10dummy=T, bYdummy=T, bNonLinear=F, bRemoveTop10init=T)
+      , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, bRemoveTop10init=F)
 ))
    
 
 
-result_lst <- summarize_result(3)
+result_lst <- summarize_result(1:nrow(para_df))
 
 rsquare_df <- ldply(lapply(result_lst, function(X)X$rsquare), quickdf)
 write.csv(rsquare_df, paste0(resultDir, 'RSquare.csv'), row.names = F)
@@ -219,6 +219,4 @@ saveTb(result_lst)
 
 readRDS(paste0(resultDir, 'top10dummy_tb4Check.RDS'))
 
-# for residual plot
-df4residualPlot <- result_lst[[1]]$df4residualPlot
-saveRDS(df4residualPlot, paste0(resultDir, 'df4residualPlot.RDS'))
+
