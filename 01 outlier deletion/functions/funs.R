@@ -71,17 +71,17 @@ transf2dummy_y <- function(data, v, n){
       
 }
 
-transf2squareEachVar <- function(vct){
+transf2hightOrderEachVar <- function(vct, orderNum){
 #       vct <- data[, v]
-      vct_square <- vct^2
-      return(vct_square)
+      eval(parse(text=paste0("vct_hightOrder <- vct^", orderNum)))
+      return(vct_hightOrder)
 }
-transf2square <- function(data, vars){
+transf2highOrder <- function(data, vars, orderNum){
       data_top10 <- data[, vars]
-      temp <- lapply(data_top10, function(vct)transf2squareEachVar(vct))
-      data_top10Varts2square <- as.data.frame(t(ldply(temp, quickdf)[, -1]))
-      colnames(data_top10Varts2square) <- paste0('square_', vars)
-      return(data_top10Varts2square)
+      temp <- lapply(data_top10, function(vct)transf2hightOrderEachVar(vct, orderNum))
+      data_top10Varts2hightOrder <- as.data.frame(t(ldply(temp, quickdf)[, -1]))
+      colnames(data_top10Varts2hightOrder) <- paste0('order', orderNum, '_', vars)
+      return(data_top10Varts2hightOrder)
 }
 
 getCoefTb <- function(step_wise){
@@ -94,12 +94,28 @@ getCoefTb <- function(step_wise){
       
 }
 
-varsDelAndStepwiseTest <- function(market_name2, n_parts
+varsDelAndStepwiseTest <- function(modelData
+                                   , market_name2
+                                   , n_parts
                                    , bTop10dummy
                                    , bYdummy
                                    , bNonLinear
-                                   , bRemoveTop10init){
-      data_after_filtered<- filter_out_records(pre_data_for_outliers2, modelData, market_name2,global_lower_p, global_higher_p)
+                                   , orderNum
+                                   , bRemoveTop10init
+                                   , BremoveCorr
+                                   , BstdYdummy
+                                   , BRmOutlier
+                                   , Btest){
+      
+      if(Btest == TRUE){
+            modelData <- modelData[1:100,]
+      }
+      if(BRmOutlier == TRUE){
+            data_after_filtered<- filter_out_records(pre_data_for_outliers2, modelData, market_name2,global_lower_p, global_higher_p)
+      }else{
+            data_after_filtered <- modelData
+      }
+#       data_after_filtered<- filter_out_records(pre_data_for_outliers2, modelData, market_name2,global_lower_p, global_higher_p)
       data_after_filtered<- data_after_filtered[,c(market_name2, vars)]
       market_sales <- data_after_filtered[,market_name2]
       data_after_filtered<- data_after_filtered[,vars]
@@ -115,9 +131,9 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
       
       if(bNonLinear == TRUE){
             # add x^2 variables of the top 10 variables
-            squareTop10 <- transf2square(data_after_filtered, top10Vars)
+            hightOrderTop10 <- transf2highOrder(data_after_filtered, top10Vars, orderNum)
             data_after_filtered = data_after_filtered %>%
-                  bind_cols(as.data.frame(squareTop10))
+                  bind_cols(as.data.frame(hightOrderTop10))
       }
       
       # dim(data_after_filtered)
@@ -130,27 +146,30 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
       data_after_filtered <- data_after_filtered[, !non_zero_vars$zeroVar]
       # dim(data_after_filtered)
       
-      descrCor <-  cor(data_after_filtered)
-      highCorr <- sum(abs(descrCor[upper.tri(descrCor)]) > correlation_criterion)
-      # print(highCorr)
-      # summary(descrCor[upper.tri(descrCor)])
-      
-      highlyCorDescr <- findCorrelation(descrCor, cutoff = correlation_criterion)
-      # print(colnames(data_after_filtered)[highlyCorDescr])
-      # s <- cor(data_after_filtered[,highlyCorDescr])
-      # write.csv(s,"high_correlation.csv")
-      
-      data_after_filtered <- data_after_filtered[,-highlyCorDescr]
-      descrCor2 <- cor(data_after_filtered)
-      # summary(descrCor2[upper.tri(descrCor2)])
-      # dim(data_after_filtered)
-      
-      
-      comboInfo <- findLinearCombos(as.matrix(data_after_filtered))
-      # print(comboInfo)
-      
-      data_after_filtered <- data_after_filtered[, -comboInfo$remove]
-      # dim(data_after_filtered)
+      if(BremoveCorr == TRUE){
+            descrCor <-  cor(data_after_filtered)
+            highCorr <- sum(abs(descrCor[upper.tri(descrCor)]) > correlation_criterion)
+            # print(highCorr)
+            # summary(descrCor[upper.tri(descrCor)])
+            
+            highlyCorDescr <- findCorrelation(descrCor, cutoff = correlation_criterion)
+            # print(colnames(data_after_filtered)[highlyCorDescr])
+            # s <- cor(data_after_filtered[,highlyCorDescr])
+            # write.csv(s,"high_correlation.csv")
+            
+            data_after_filtered <- data_after_filtered[,-highlyCorDescr]
+            descrCor2 <- cor(data_after_filtered)
+            # summary(descrCor2[upper.tri(descrCor2)])
+            # dim(data_after_filtered)
+            
+            
+            comboInfo <- findLinearCombos(as.matrix(data_after_filtered))
+            # print(comboInfo)
+            
+            data_after_filtered <- data_after_filtered[, -comboInfo$remove]
+            # dim(data_after_filtered)
+            
+      }
       
       #draw graphics for t
       
@@ -169,6 +188,9 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
             
             # add dummy variables for y
             y_dummy <- transf2dummy_y(data=data_after_filtered, v='y', n=3)
+            if(BstdYdummy == TRUE){
+                  y_dummy <- scale(y_dummy)
+            }
             
             data_after_filtered = data_after_filtered %>%
                   bind_cols(as.data.frame(y_dummy))
@@ -230,19 +252,29 @@ varsDelAndStepwiseTest <- function(market_name2, n_parts
       return(output)
 }
 
-summarize_result <- function(try_list){
+summarize_result <- function(modelData, try_list){
       temp <- lapply(try_list, function(i){
             bTop10dummy = para_df[i, "bTop10dummy"]
             bYdummy = para_df[i, "bYdummy"]
             bNonLinear = para_df[i, "bNonLinear"]
+            orderNum = para_df[i, "orderNum"]
             bRemoveTop10init = para_df[i, "bRemoveTop10init"]
-            
-            temp_lst <- varsDelAndStepwiseTest(market_name2="panel_catt_daily"
+            BremoveCorr = para_df[i, "BremoveCorr"]
+            BstdYdummy = para_df[i, "BstdYdummy"]
+            BRmOutlier = para_df[i, "BRmOutlier"]
+            Btest = para_df[i, "Btest"]
+            temp_lst <- varsDelAndStepwiseTest(modelData = modelData
+                                               , market_name2="panel_catt_daily"
                                                , n_parts = n_parts
                                                , bTop10dummy = bTop10dummy
                                                , bYdummy = bYdummy
                                                , bNonLinear = bNonLinear
+                                               , orderNum = orderNum
                                                , bRemoveTop10init = bRemoveTop10init
+                                               , BremoveCorr=BremoveCorr
+                                               , BstdYdummy=BstdYdummy
+                                               , BRmOutlier=BRmOutlier
+                                               , Btest=Btest
             )
             
             return(temp_lst)

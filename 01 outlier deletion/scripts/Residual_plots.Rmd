@@ -8,14 +8,14 @@ output: html_document
 Here let's get the residual plot for Try3 and Try4 experiment, which is 
 
 ```{r}
-try_id <- 3
+try_id <- 1
 try_id
 ```
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE}
 library(ggplot2)
 market_name <- "panel_catt_daily"
-df4residualPlot <- readRDS(paste0('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2016-11-17 15.37.53\\residualTb_try', try_id, '.RDS'))
+df4residualPlot <- readRDS(paste0('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2016-11-21 16.27.02\\residualTb_try', try_id, '.RDS'))
 
 ```
 
@@ -29,14 +29,14 @@ ggplot(df4residualPlot , aes(x= Observe, y= Residual)) +  geom_point() + ggtitle
 ```
 
 ```{r}
-try_id <- 4
+try_id <- 2
 try_id
 ```
 
 ```{r, echo=FALSE, eval=TRUE, message=FALSE}
 library(ggplot2)
 market_name <- "panel_catt_daily"
-df4residualPlot <- readRDS(paste0('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2016-11-17 15.37.53\\residualTb_try', try_id, '.RDS'))
+df4residualPlot <- readRDS(paste0('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2016-11-21 16.27.02\\residualTb_try', try_id, '.RDS'))
 
 ```
 

@@ -16,7 +16,7 @@ library(plyr)
 
 source("./functions/funs.R")
 
-dataPath = "./../../01 Data/"
+dataPath = "./../../01 Data/Jan22/"
 n_parts <- 60
 bTop10dummy = T
 bYdummy = F
@@ -32,25 +32,38 @@ cat(file=traceFile, append = T, 'n_parts=', n_parts, ', bTop10dummy='
     , bTop10dummy, ', bYdummy=', bYdummy, ', bNonLinear=', bNonLinear
     , ', bRemoveTop10init=', bRemoveTop10init, '\n')
 
-load(paste0(dataPath, "For_Delete_outliers.RData")) #FR_model_data_withsurvey [1] 7279  202
+# load(paste0(dataPath, "For_Delete_outliers.RData")) #FR_model_data_withsurvey [1] 7279  202
 #universe_sales_info [1] 22355    11
+FR_model_data_withsurvey <- read.csv(file=paste0(dataPath, "new_model_data_for_exercise_v2.csv")
+                                     , header=T
+                                     , stringsAsFactors = F
+                                     )
+# [1] 7116  250
+
+universe_sales_info <- read.csv(file=paste0(dataPath, "universe_sales_info.csv")
+                                , header=T
+                                , stringsAsFactors = F
+                                )
+# [1] 22355    11
+names(FR_model_data_withsurvey) <- tolower(names(FR_model_data_withsurvey))
+names(universe_sales_info) <- tolower(names(universe_sales_info))
 
 
 panel_sales_info <- subset(universe_sales_info, !is.na(panel_catt)) #[1] 14566    11
 # dim(panel_sales_info)
 
-FR_model_data_withsurvey_panel <- subset(FR_model_data_withsurvey, !is.na(panel_catt_daily)) #[1] 3520  202
-FR_model_data_withsurvey_nonpanel <- subset(FR_model_data_withsurvey, is.na(panel_catt_daily)) #[1] 3759  202
+FR_model_data_withsurvey_panel <- subset(FR_model_data_withsurvey, !is.na(panel_catt_daily)) #[1] 3455  250
+FR_model_data_withsurvey_nonpanel <- subset(FR_model_data_withsurvey, is.na(panel_catt_daily)) #[1] 3661  250
 # dim(FR_model_data_withsurvey_panel)
 # dim(FR_model_data_withsurvey_nonpanel)
 
 FR_for_outliers <- subset(FR_model_data_withsurvey_panel, select = code_onekey:panel_caac_daily)
 
 pre_data_for_outliers<- left_join(FR_for_outliers, panel_sales_info, by=c("code_onekey"))
-# dim(pre_data_for_outliers)
+dim(pre_data_for_outliers) #[1] 3455   20
 # colnames(pre_data_for_outliers)
 
-# table(apply(pre_data_for_outliers, 1, function(x){any(is.na(x))}))
+table(apply(pre_data_for_outliers, 1, function(x){any(is.na(x))}))
 
 #step 1-- -	Keep panelist with at least 140 days with sales, now first mark those with at least 140 days
 
@@ -200,17 +213,22 @@ top10Vars <- read.xlsx(paste0(dataPath, 'pearson_correlation between observed y 
                        , sheetIndex=1
                        , header=T
                        , stringsAsFactors=F)$Var_Name[1:10]
+top10Vars <- read.csv(paste0(dataPath, "merged_pearson_coef.csv")
+                      , header = T
+                      , stringsAsFactors = F
+                      )$Var_Name[1:10]
 
 para_df <- as.data.frame(rbind(
-      c(bTop10dummy=T, bYdummy=F, bNonLinear=F, bRemoveTop10init=T)
-      , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, bRemoveTop10init=F)
-      , c(bTop10dummy=T, bYdummy=T, bNonLinear=F, bRemoveTop10init=T)
-      , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, bRemoveTop10init=F)
+      c(bTop10dummy=T, bYdummy=F, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
+      , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
+      , c(bTop10dummy=T, bYdummy=T, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
+      , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
 ))
    
 
-
-result_lst <- summarize_result(1:nrow(para_df))
+result_lst <- summarize_result(modelData=modelData
+                               , try_list=1:nrow(para_df)
+                               )
 
 rsquare_df <- ldply(lapply(result_lst, function(X)X$rsquare), quickdf)
 write.csv(rsquare_df, paste0(resultDir, 'RSquare.csv'), row.names = F)
