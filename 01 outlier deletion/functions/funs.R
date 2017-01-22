@@ -246,6 +246,7 @@ varsDelAndStepwiseTest <- function(modelData
                 , bYdummy = bYdummy
                 , bNonLinear = bNonLinear
                 , bRemoveTop10init = bRemoveTop10init
+                , BRmOutlier = BRmOutlier
                 , R.Square = R.Square)
       output <- list(rsquare=temp, rsquareTbNm=names(temp), coefs=stepwise_coefs, check_corr2=check_corr2
                      , df4residualPlot=df4residualPlot)

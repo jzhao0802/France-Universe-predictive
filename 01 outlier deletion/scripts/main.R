@@ -209,20 +209,20 @@ market_name2<- "panel_catt_daily"
 correlation_criterion <- 0.95
 
 
-top10Vars <- read.xlsx(paste0(dataPath, 'pearson_correlation between observed y and attributes for each market.xlsx')
-                       , sheetIndex=1
-                       , header=T
-                       , stringsAsFactors=F)$Var_Name[1:10]
+# top10Vars <- read.xlsx(paste0(dataPath, 'pearson_correlation between observed y and attributes for each market.xlsx')
+#                        , sheetIndex=1
+#                        , header=T
+#                        , stringsAsFactors=F)$Var_Name[1:10]
 top10Vars <- read.csv(paste0(dataPath, "merged_pearson_coef.csv")
                       , header = T
                       , stringsAsFactors = F
                       )$Var_Name[1:10]
 
 para_df <- as.data.frame(rbind(
-      c(bTop10dummy=T, bYdummy=F, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
-      , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
-      , c(bTop10dummy=T, bYdummy=T, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
-      , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=T)
+      c(bTop10dummy=T, bYdummy=F, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=F)
+      , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=F)
+      , c(bTop10dummy=T, bYdummy=T, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=F)
+      , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=F, Btest=F)
 ))
    
 

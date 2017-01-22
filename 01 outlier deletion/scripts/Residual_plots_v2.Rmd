@@ -1,18 +1,22 @@
 ---
 title: "Residual_plots_v2"
 author: "Jie Zhao"
-date: "November 21, 2016"
-output: html_document
+date: "`r format(Sys.time(), '%d %B, %Y, %H:%M')`"
+
 ---
 
 
 ```{r, r, echo=FALSE, eval=TRUE, message=FALSE}
 library(ggplot2)
 market_name <- "panel_catt_daily"
+# owd = setwd('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2017-01-22 10.22.56')
+# knit('../doc.Rmd')
+# setwd(owd)
+
 
 for(try_id in 1:4){
-      df4residualPlot <- readRDS(paste0('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2016-11-22 10.03.21\\residualTb_try', try_id, '.RDS'))
-      plot_title <- paste0("Residual V.S. Observed Y (", market_name,"), with Survey variables, for experiment try", try_id)
+      df4residualPlot <- readRDS(paste0('C:\\work\\working materials\\Fr_univ_estimation\\02 Code\\01 outlier deletion\\Results\\2017-01-22 12.27.54\\residualTb_try', try_id, '.RDS'))
+      plot_title <- paste0("Residual V.S. Observed Y (", market_name,"), with Survey variables, try", try_id)
       pp <- ggplot(df4residualPlot , aes(x= Observe, y= Residual)) +  geom_point() + ggtitle(plot_title)
       print(pp)
       cat('\n\n')
