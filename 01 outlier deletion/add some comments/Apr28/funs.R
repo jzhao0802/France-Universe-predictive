@@ -27,6 +27,7 @@ cal_rsquare<- function(y, y_hat){
 
 # function to break the vector of top 10 variables into several buckets, and at the same time to
 # avoid the small size of bucket
+# maybe need to change if data updated
 transf4dummy <- function(data_top10Vars,v,n_parts){
       vct <- data_top10Vars[, v]
       type <- ifelse(is.integer(vct), 3, 4)
