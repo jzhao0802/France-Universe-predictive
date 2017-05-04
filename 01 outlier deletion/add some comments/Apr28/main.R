@@ -181,11 +181,12 @@ top10Vars_df <- read.csv(paste0(dataPath, "merged_pearson_coef.csv")
 # 7. BstdYdummy: if standarizing the y dummy variables
 
 para_df <- as.data.frame(rbind(
-#       c(bTop10dummy=T, bYdummy=F, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
-#       , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
-       c(bTop10dummy=T, bYdummy=T, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=BRmOutlier, Btest=T)
-      # , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
+      c(bTop10dummy=T, bYdummy=F, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
+      , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
+      , c(bTop10dummy=T, bYdummy=T, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=BRmOutlier, Btest=T)
+      , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
 ))
+try_list <- c(2)
 # para_df <- as.data.frame(rbind(
 #   #       c(bTop10dummy=T, bYdummy=F, bNonLinear=F, orderNum=3, bRemoveTop10init=T, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
 #   #       , c(bTop10dummy=F, bYdummy=F, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
@@ -193,30 +194,6 @@ para_df <- as.data.frame(rbind(
 #   # , c(bTop10dummy=F, bYdummy=T, bNonLinear=T, orderNum=3, bRemoveTop10init=F, BremoveCorr=F, BstdYdummy=T, BRmOutlier=T, Btest=F)
 # ))
 
-#create a function used in later parallel running, each parallel for each market
-func4eachMkt <- function(mkt, modelData, para_df){
-      outDir <- paste0(resultDir, mkt, '\\')
-      dir.create(outDir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
-      traceFile <- paste0(outDir, 'traceFile.csv')
-      
-      varVal <- lazyeval::interp(~desc(abs(var)), var=as.name(mkt))
-      top10VarsThisMkt <- top10Vars_df %>% arrange_(.dots=list(varVal)) %>% select(Var_Name) %>% .[1:10, ]
-      cat(file = traceFile, append = T, '1\n')
-      result_lst <- summarize_result(modelData=modelData
-                                     , market_name2=mkt
-                                     , try_list=1:nrow(para_df)
-                                     , outDir=outDir
-                                     , top10Vars=top10VarsThisMkt
-      )
-      cat(file = traceFile, append = T, '2\n')
-      
-      rsquare_df <- ldply(lapply(result_lst, function(X)X$rsquare), quickdf)
-      write.csv(rsquare_df, paste0(outDir, 'RSquare.csv'), row.names = F)
-      cat(file = traceFile, append = T, '3\n')
-      
-      saveTb(result_lst, outDir)
-      
-}
 
 # defind the cpu number to be used in parallel
 sfInit(parallel=TRUE, cpus=n.simu, type='SOCK')
@@ -225,7 +202,7 @@ global_higher_p <- 1 - global_lower_p
 cat(file=traceFile, append=TRUE, 'n.simu simulations parallel sfExport running!\n')
 sfExport("modelData", "para_df", "resultDir", "top10Vars_df", "correlation_criterion", "n_parts"
          , "global_lower_p", "global_higher_p", "vars", "pre_data_for_outliers2"
-         , "FR_model_data_withsurvey", "traceFile", "daily_ave_sales"
+         , "FR_model_data_withsurvey", "traceFile", "daily_ave_sales", "try_list"
          )
 
 sfSource("./funs.R")
@@ -237,7 +214,7 @@ sfClusterEval(library(plyr))
 # sfClusterEval(library(QuantPsyc))
 
 # start to predict for all the 9 market using several number of cpus
-temp <- sfClusterApplyLB(daily_ave_sales, func4eachMkt, modelData, para_df)   
+temp <- sfClusterApplyLB(daily_ave_sales, func4eachMkt, modelData, para_df, try_list)   
 
 if(BRmOutlier==T){
   summary_rsquare(resultDir=resultDir

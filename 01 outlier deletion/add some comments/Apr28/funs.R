@@ -27,7 +27,6 @@ cal_rsquare<- function(y, y_hat){
 
 # function to break the vector of top 10 variables into several buckets, and at the same time to
 # avoid the small size of bucket
-# maybe need to change if data updated
 transf4dummy <- function(data_top10Vars,v,n_parts){
       vct <- data_top10Vars[, v]
       type <- ifelse(is.integer(vct), 3, 4)
@@ -511,8 +510,36 @@ summarize_result <- function(modelData, market_name2, try_list, outDir, top10Var
       return(temp)
 }
 
+
+
+
+#create a function used in later parallel running, each parallel for each market
+func4eachMkt <- function(mkt, modelData, para_df, try_list){
+  outDir <- paste0(resultDir, mkt, '\\')
+  dir.create(outDir, showWarnings = TRUE, recursive = TRUE, mode = "0777")
+  traceFile <- paste0(outDir, 'traceFile.csv')
+  
+  varVal <- lazyeval::interp(~desc(abs(var)), var=as.name(mkt))
+  top10VarsThisMkt <- top10Vars_df %>% arrange_(.dots=list(varVal)) %>% select(Var_Name) %>% .[1:10, ]
+  cat(file = traceFile, append = T, '1\n')
+  result_lst <- summarize_result(modelData=modelData
+                                 , market_name2=mkt
+                                 , try_list=try_list
+                                 , outDir=outDir
+                                 , top10Vars=top10VarsThisMkt
+  )
+  cat(file = traceFile, append = T, '2\n')
+  
+  rsquare_df <- ldply(lapply(result_lst, function(X)X$rsquare), quickdf)
+  write.csv(rsquare_df, paste0(outDir, 'RSquare.csv'), row.names = F)
+  cat(file = traceFile, append = T, '3\n')
+  
+  saveTb(lst=result_lst, resultDir=outDir, try_list=try_list)
+  
+}
+
 # function to save the result of residual table, coefficient of stepwise and correlation
-saveTb <- function(lst, resultDir){
+saveTb <- function(lst, resultDir, try_list){
       lapply(1:length(lst), function(i){
             X <- lst[[i]]
             flag <- as.data.frame(rbind(X$rsquare))
@@ -521,7 +548,7 @@ saveTb <- function(lst, resultDir){
             residualsTb <- X$df4residualPlot
             prediction <- X$prediction
 #             coefs_std <- X$coefs_std
-            saveRDS(residualsTb, paste0(resultDir, 'residualTb_try', i, '.RDS'))
+            saveRDS(residualsTb, paste0(resultDir, 'residualTb_try', try_list[i], '.RDS'))
 #             write.xlsx(coefs
 #                        , file=paste0(resultDir, 'stepwise_coefs.xlsx')
 #                        , sheetName=paste0('try ', i)
@@ -530,7 +557,7 @@ saveTb <- function(lst, resultDir){
 #                        , showNA=T
 #             )
             write.csv(coefs
-                      , file=paste0(resultDir, 'stepwise_coefs_std_try', i, '.csv')
+                      , file=paste0(resultDir, 'stepwise_coefs_std_try', try_list[i], '.csv')
                       , row.names=T
             )
 #             write.xlsx(corr
@@ -545,7 +572,7 @@ saveTb <- function(lst, resultDir){
 #                       , row.names=T
 #             )
             write.csv(prediction
-                      , file=paste0(resultDir, 'prediction_try', i, '.csv')
+                      , file=paste0(resultDir, 'prediction_try', try_list[i], '.csv')
                       , row.names=T
             )
 #             write.csv(coefs_std
